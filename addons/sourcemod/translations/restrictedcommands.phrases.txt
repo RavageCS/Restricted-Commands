@@ -1,0 +1,8 @@
+"Phrases"
+{
+	"restricted"
+	{
+		"en"			"That command is restricted!"
+		"es"			"Este comando esta restringido!"
+	}
+}

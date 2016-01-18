@@ -1,11 +1,16 @@
 // Plugin definitions
-#define PLUGIN_VERSION "1.0.0"
+#define PLUGIN_VERSION "2.0.0"
 #pragma semicolon 1
 #include <sourcemod>
 
-new String:sound[65];
-int num;
-Handle g_enabled = INVALID_HANDLE;
+new String:sound[512];
+char soundBuffer[512];
+new String:soundString[512];
+
+new Handle:g_plugin_enabled = INVALID_HANDLE;
+new Handle:g_sound_enabled = INVALID_HANDLE;
+new Handle:g_message_enabled = INVALID_HANDLE;
+new Handle:g_sound = INVALID_HANDLE;
 
 new bool:g_LoggedFileName = false;			/* Whether or not the file name has been logged */
 new g_ErrorCount = 0;						/* Current error count */
@@ -17,15 +22,94 @@ public Plugin:myinfo =
 	name = "[CS:GO]Restricted Commands",
 	author = "Gdk",
 	version = PLUGIN_VERSION,
-	description = "Plays a negative sound when players type a restricted command",
+	description = "Plays a negative sound and or message when players type a restricted command",
 	url = "https://topsecretgaming.net"
 };
 
 public OnPluginStart()
 {
+	LoadTranslations("restrictedcommands.phrases");
 	ReadCommands();
-	g_enabled = CreateConVar("sm_restriced_commands_enabled", "1", "Whether plugin is enabled");
+	g_plugin_enabled = CreateConVar("sm_restricted_commands_enabled", "1", "Whether plugin is enabled");
+	g_sound_enabled = CreateConVar("sm_restricted_commands_sound_enabled", "1", "Whether a sound should be played");
+	g_message_enabled = CreateConVar("sm_restricted_commands_message_enabled", "1", "Whether a message should be shown");
+	g_sound = CreateConVar("sm_restricted_commands_sound", "random", "Game sound to play. Examples: error.wav, /buttons/weapon_cant_buy.wav, /player/vo/fbihrt/radiobotreponsenegative09.wav");
+
+	GetConVarString(g_sound, sound, sizeof(sound));
+	Format(soundBuffer, sizeof(soundBuffer), "playgamesound %s", sound);
+	GetConVarString(g_sound, soundString, sizeof(soundString));
+
+	HookConVarChange(g_plugin_enabled, OnConvarChanged);
+  	HookConVarChange(g_sound_enabled, OnConvarChanged);
+  	HookConVarChange(g_message_enabled, OnConvarChanged);
+  	HookConVarChange(g_sound, OnConvarChanged);	
+
 	AutoExecConfig(true, "restricted_commands", "sourcemod");
+}
+
+public OnConvarChanged(Handle:convar, const String:oldValue[], const String:newValue[])
+{
+	if (convar == g_plugin_enabled)
+  	{
+    		if (newValue[0] == '1')
+    		{
+			SetConVarInt(convar, 1);
+    		}	
+  	}
+	if (convar == g_sound_enabled)
+  	{
+    		if (newValue[0] == '1')
+    		{
+			SetConVarInt(convar, 1);
+    		}
+  	}
+	if (convar == g_message_enabled)
+  	{
+    		if (newValue[0] == '1')
+    		{
+			SetConVarInt(convar, 1);
+    		}
+  	}
+	if (convar == g_sound)
+  	{
+    		GetConVarString(g_sound, sound, sizeof(sound));
+		Format(soundBuffer, sizeof(soundBuffer), "playgamesound %s", sound);
+		GetConVarString(g_sound, soundString, sizeof(soundString));
+  	}
+}
+
+RegCommands(const String:line[])
+{
+	RegConsoleCmd(line, Command_RestrictedCommand);
+}
+
+public Action Command_RestrictedCommand(int client, int args) 
+{
+	//Testing
+	//PrintToChatAll("sound: %s", sound);
+	//PrintToChatAll("soundBuffer: %s", soundBuffer);
+	//PrintToChatAll("soundString: %s", soundString);
+	if(GetConVarBool(g_plugin_enabled))
+	{
+		if(GetConVarBool(g_sound_enabled))
+		{
+			if(StrEqual(soundString, "random", false))
+			{
+				int num = GetRandomInt(1, 112);
+				randSound(num);
+				ClientCommand(client, sound);
+			}
+			else
+			{
+				ClientCommand(client, soundBuffer);
+			}
+		}
+		if(GetConVarBool(g_message_enabled))
+		{
+			PrintToChat(client, "%t", "restricted");
+		}
+	}
+	return Plugin_Handled;
 }
 
 public ReadCommands()
@@ -102,23 +186,7 @@ ParseError(const String:format[], any:...)
 	g_ErrorCount++;
 }
 
-RegCommands(const String:line[])
-{
-	RegConsoleCmd(line, Command_PlaySound);
-}
-
-public Action Command_PlaySound(int client, int args) 
-{
-	if (GetConVarInt(g_enabled) == 1)
-	{
-		num = GetRandomInt(1, 112);
-		getSound(num);
-		ClientCommand(client, sound);
-	}
-	return Plugin_Handled;
-}
-
-public getSound(int randNum)
+public randSound(int num)
 {
 	if(num == 1)
 		sound = "playgamesound player/vo/balkan/negative01.wav";
