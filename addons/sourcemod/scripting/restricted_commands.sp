@@ -1,5 +1,5 @@
 // Plugin definitions
-#define PLUGIN_VERSION "2.0.0"
+#define PLUGIN_VERSION "2.0.1"
 #pragma semicolon 1
 #include <sourcemod>
 
@@ -22,7 +22,7 @@ public Plugin:myinfo =
 	name = "[CS:GO]Restricted Commands",
 	author = "Gdk",
 	version = PLUGIN_VERSION,
-	description = "Plays a negative sound and or message when players type a restricted command",
+	description = "Plays a negative sound and or displayes a message when players type a restricted command",
 	url = "https://topsecretgaming.net"
 };
 
